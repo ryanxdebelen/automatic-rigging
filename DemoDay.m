@@ -285,6 +285,27 @@ jointlocation(18,:) = neck;
 
 DemoDisplaySkeleton;
 
+finaljoints = zeros(20, 3);
+
+finaljoints(3,:) = [realhip(1) realhip(2) realhip(3)];
+finaljoints(4,:) = jointlocation(13,:) - finaljoints(3,:);
+finaljoints(5,:) = jointlocation(8,:) - finaljoints(4,:) - finaljoints(3,:);
+finaljoints(6,:) = jointlocation(9,:) - finaljoints(5,:) - finaljoints(4,:) - finaljoints(3,:);
+finaljoints(7,:) = jointlocation(12,:) - finaljoints(3,:);
+finaljoints(8,:) = jointlocation(6,:) - finaljoints(7,:) - finaljoints(3,:);
+finaljoints(9,:) = jointlocation(7,:) - finaljoints(8,:) - finaljoints(7,:) - finaljoints(3,:);
+finaljoints(10,:) = [dividex(3) dividey(3) dividez(3)] - finaljoints(3,:);
+finaljoints(11,:) = [dividex(2) dividey(2) dividez(2)] - finaljoints(10,:) - finaljoints(3,:);
+finaljoints(12,:) = [spine2(1) spine2(2) spine2(3)] - finaljoints(11,:) - finaljoints(10,:) - finaljoints(3,:);
+finaljoints(13,:) = jointlocation(11,:) - finaljoints(12,:) - finaljoints(11,:) - finaljoints(10,:) - finaljoints(3,:);
+finaljoints(14,:) = jointlocation(4,:) - finaljoints(13,:) - finaljoints(12,:) - finaljoints(11,:) - finaljoints(10,:) - finaljoints(3,:);
+finaljoints(15,:) = jointlocation(5,:) - finaljoints(14,:) - finaljoints(13,:) - finaljoints(12,:) - finaljoints(11,:) - finaljoints(10,:) - finaljoints(3,:);
+finaljoints(16,:) = jointlocation(10,:) - finaljoints(12,:) - finaljoints(11,:) - finaljoints(10,:) - finaljoints(3,:);
+finaljoints(17,:) = jointlocation(2,:) - finaljoints(16,:) - finaljoints(12,:) - finaljoints(11,:) - finaljoints(10,:) - finaljoints(3,:);
+finaljoints(18,:) = jointlocation(3,:) - finaljoints(17,:) - finaljoints(16,:) - finaljoints(12,:) - finaljoints(11,:) - finaljoints(10,:) - finaljoints(3,:);
+finaljoints(19,:) = [neck(1) neck(2) neck(3)] - finaljoints(12,:) - finaljoints(11,:) - finaljoints(10,:) - finaljoints(3,:);
+finaljoints(20,:) = jointlocation(1,:) - finaljoints(19,:) - finaljoints(12,:) - finaljoints(11,:) - finaljoints(10,:) - finaljoints(3,:);
+
 jointlocation = finaljoints(3:20,:);
 
 DemoFBXCreator
