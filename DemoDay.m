@@ -215,6 +215,74 @@ for firstlevel=1:6,
     end
 end
 
+
+i = 1;
+jointcounter = 1;
+while i <=size(finalcluster,1),
+    %     for i = 1:size(finalcluster,1),
+    if (i == 1),
+        %             disp(i);
+        row = finalcluster(i,:);
+        row = row(row~=0);
+        jointlocation(jointcounter,:) = mean(vertices(row,:),1);
+        jointcounter = jointcounter + 1;
+        i = i + 1;
+    elseif (i < 14),
+        %             disp(i);
+        row1 = finalcluster(i,:);
+        row1 = row1(row1~=0);
+        i = i + 1;
+        row2 = finalcluster(i,:);
+        row2 = row2(row2~=0);
+        i = i + 1;
+        row3 = finalcluster(i,:);
+        row3 = row3(row3~=0);
+        i = i + 1;
+        jointright1 = mean(vertices(row1,:),1);
+        jointright2 = mean(vertices(row2,:),1);
+        jointright3 = mean(vertices(row3,:),1);
+        jointr = [jointright1; jointright2; jointright3];
+        [Y,I] = sort([jointright1(2),jointright2(2),jointright3(2)], 'ascend');
+        if (i == 5 || i == 8),
+            jointlocation(jointcounter,:) = mean([jointr(I(2),:); jointr(I(3),:)]);
+        else
+            jointlocation(jointcounter,:) = jointr(I(3),:);
+        end
+        jointcounter = jointcounter + 1;
+        jointlocation(jointcounter,:) = jointr(I(1),:);
+        jointcounter = jointcounter + 1;
+    else
+        %             disp(i);
+        row = finalcluster(i,:);
+        row = row(row~=0);
+        jointlocation(jointcounter,:) = mean(vertices(row,:),1);
+        jointcounter = jointcounter + 1;
+        i = i + 1;
+    end
+end
+
+shoulderwidth = sqrt((jointlocation(10,:) - jointlocation(11,:)).^2*ones(3,1));
+spine2 = mean([jointlocation(10,:); jointlocation(11,:)]);
+spine2(2) = spine2(2) + shoulderwidth/4;
+
+neck = mean([jointlocation(1,:); spine2]);
+
+realhip = mean([jointlocation(12,:); jointlocation(13,:)]);
+realhip(2) = realhip(2) + shoulderwidth/4;
+
+dividex = linspace(spine2(1), realhip(1),4);
+dividey = linspace(spine2(2), realhip(2),4);
+dividez = linspace(spine2(3), realhip(3),4);
+
+spine1 = [dividex(2) dividey(2) dividez(2)];
+spine = [dividex(3) dividey(3) dividez(3)];
+
+jointlocation(14,:) = realhip;
+jointlocation(15,:) = spine;
+jointlocation(16,:) = spine1;
+jointlocation(17,:) = spine2;
+jointlocation(18,:) = neck;
+
 DemoDisplaySkeleton;
 
 jointlocation = finaljoints(3:20,:);
