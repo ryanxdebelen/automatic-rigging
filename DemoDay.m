@@ -1,20 +1,179 @@
-d = dir('Input');
+clear all; close all;
 
-disp('Loading input OBJ file...');
-if (strcmp(d(4).name,'Model1.obj')),
-    load('Model1_GPSClustering.mat');
-elseif (strcmp(d(4).name,'Model2.obj')),
-    load('Model2_GPSClustering.mat');
-elseif (strcmp(d(4).name,'Model3.obj')),
-    load('Model3_GPSClustering.mat');
-elseif (strcmp(d(4).name,'Model11.obj')),
-    load('Model11_GPSClustering.mat');
-elseif (strcmp(d(4).name,'Model16.obj')),
-    load('Model16_GPSClustering.mat');
-elseif (strcmp(d(4).name,'CaptainAmerica.obj')),
-    load('CaptainAmerica.mat');
+struct_input = dir('Input4');
+meshcounter = 3;
+modelname = struct_input(meshcounter).name;
+filepath = strcat('Input4/', modelname);
+
+saveName = modelname(1:end-4);
+
+[vertices, oldfaces] = ReadOBJ(filepath);
+newfaces = oldfaces;
+
+vertices1(:,3) = vertices(:,3)-min(vertices(:,3));
+vertices1(:,2) = vertices(:,2)-min(vertices(:,2));
+vertices1(:,1) = vertices(:,1)-min(vertices(:,1));
+%vertices1(:,1) = vertices1(:,1)*2;
+vertices = vertices1;
+
+edgecounter = 1;
+
+for i = 1:size(newfaces,1),
+    if (newfaces(i,1) < newfaces(i,2)),
+        edges(edgecounter,1) = newfaces(i,1);
+        edges(edgecounter,2) = newfaces(i,2);
+    else
+        edges(edgecounter,1) = newfaces(i,2);
+        edges(edgecounter,2) = newfaces(i,1);
+    end
+    faceref(edgecounter,1) = i;
+    edgecounter = edgecounter + 1;
+    
+    if (newfaces(i,2) < newfaces(i,3)),
+        edges(edgecounter,1) = newfaces(i,2);
+        edges(edgecounter,2) = newfaces(i,3);
+    else
+        edges(edgecounter,1) = newfaces(i,3);
+        edges(edgecounter,2) = newfaces(i,2);
+    end
+    faceref(edgecounter,1) = i;
+    edgecounter = edgecounter + 1;
+    
+    if (newfaces(i,1) < newfaces(i,3)),
+        edges(edgecounter,1) = newfaces(i,1);
+        edges(edgecounter,2) = newfaces(i,3);
+    else
+        edges(edgecounter,1) = newfaces(i,3);
+        edges(edgecounter,2) = newfaces(i,1);
+    end
+    faceref(edgecounter,1) = i;
+    edgecounter = edgecounter + 1;
+    
+    face = newfaces(i,:);
+    facenormals(i,:) = cross(vertices(face(2),:)-vertices(face(1),:), vertices(face(3),:)-vertices(face(1),:));
+    %     facenormals(i,:) = facenormals(i,:)./norm(facenormals(i,:));
+    facearea(i,1) = (1/2)*norm(facenormals(i,:));
+    %     facenormals(i,:) = facenormals(i,:)./norm(facenormals(i,:));
 end
-disp('Loading input OBJ file DONE!!!');
+
+edgecounter = 1;
+newedges = [0 0];
+newfaceref = [0 0];
+for i = 1:size(edges,1),
+    edge = edges(i,:);
+    indexfound = [];
+    if i ~= 1,
+        indexrows = find(newedges(:,1) == edge(1));
+        indexfound = newedges(newedges(indexrows,2) == edge(2));
+        index = find(newedges(indexrows,2) == edge(2));
+        index = indexrows(index);
+        if length(index) == 0,
+            indexrows = find(newedges(:,1) == edge(2));
+            indexfound = newedges(newedges(indexrows,2) == edge(1));
+            index = find(newedges(indexrows,2) == edge(1));
+            index = indexrows(index);
+        end
+    end
+    if length(indexfound) >= 1,
+        newfaceref(index,2) = faceref(i);
+        %         disp('FOUND!');
+    else
+        %         disp('NOT FOUND!');
+        newedges(edgecounter,:) = edge;
+        newfaceref(edgecounter,1) = faceref(i);
+        edgecounter = edgecounter + 1;
+    end
+end
+
+for i = 1:size(newedges,1),
+    twofaces = newfaceref(i,:);
+    edge = newedges(i,:);
+    face1 = newfaces(twofaces(1),:);
+    face2 = newfaces(twofaces(2),:);
+    
+    notedgevertex1 = setdiff(face1, edge);
+    notedgevertex2 = setdiff(face2, edge);
+    
+    A1 = vertices(edge(1),:) - vertices(notedgevertex1,:);
+    B1 = vertices(edge(2),:) - vertices(notedgevertex1,:);
+    
+    cot1 = abs(dot(A1,B1)/(1e-6 + norm(cross(A1,B1))));
+    
+    
+    A2 = vertices(edge(1),:) - vertices(notedgevertex2,:);
+    B2 = vertices(edge(2),:) - vertices(notedgevertex2,:);
+    
+    cot2 = abs(dot(A2,B2)/(1e-6 + norm(cross(A2,B2))));
+    
+    cotangles(i,1) = cot1;
+    cotangles(i,2) = cot2;
+    %
+    %     normal1 = facenormals(twofaces(1),:);
+    %     normal2 = facenormals(twofaces(2),:);
+    %     edgeangle(i) = atand(norm(cross(normal1,normal2))/(dot(normal1,normal2)));
+end
+
+Mf = zeros(size(vertices,1),size(vertices,1));
+Af = zeros(size(vertices,1),size(vertices,1));
+
+for i = 1:size(vertices,1),
+    edgeindex1 = find(newedges(:,1) == i);
+    edgeindex2 = find(newedges(:,2) == i);
+    edgeindex = [edgeindex1; edgeindex2];
+    for j = 1:size(edgeindex,1),
+        edge = newedges(edgeindex(j),:);
+        %         if (edge(edge~=i) > i),
+        angles = cotangles(edgeindex(j),:);
+        Mf(i,i) = Mf(i,i) + sum(angles)/2;
+        Mf(i,edge(edge~=i)) = -1*sum(angles)/2;
+        Af(i,i) = Af(i,i) + sum(facearea(newfaceref(edgeindex(j),:)));
+        %         end
+    end
+    Af(i,i) = Af(i,i)/4;
+end
+
+dim = 14;
+
+tic
+% Initialize GPS dimension
+%     dim = 10;
+
+% Get the eigenvalues and the eigenvectors of the Laplace-Beltrami operator
+[VGPS, DGPS] = eigs(Mf, Af, dim+1, 'SM');
+
+% After the computation, eigenvalues are arranged in decreasing order.
+% However, they should be arranged in increasing order for the GPS
+% computation. In addition, the lowest value should be disregarded because
+% it is close to zero.
+eigenvalues = diag(DGPS);
+eigenvalues = eigenvalues(end-1:-1:1);
+
+% The eigenvectors are also arranged in decreasing order. Hence, they
+% should be re-arranged so that they correspond to the correct eigenvalues
+eigenvectors = VGPS(:, end-1:-1:1);
+
+mag = [];
+clear randomcluster1;
+
+% Compute for the eigenvector normalization values
+for i = 1:size(eigenvectors,2),
+    sqr = eigenvectors(:,i)'*Af*eigenvectors(:,i);
+    mag(i) = sqrt(sqr);
+end
+
+% Normalize the eigenvectors
+neigenvectors = eigenvectors./(repmat(mag, size(vertices,1), 1));
+
+% Compute for the GPS values
+GPSfinal = neigenvectors./(sqrt(repmat(eigenvalues',size(vertices,1),1)));
+
+randomcluster = [];
+maxIter = 30;
+subvertex = [];
+
+verticescopy = vertices;
+
+
 
 randomcluster = [];
 C = [];
